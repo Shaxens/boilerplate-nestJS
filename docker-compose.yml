@@ -2,7 +2,7 @@ version: '3.5'
 
 services:
 
-#  //****** Database ******//
+#  //****** DATABASE ******//
   mongo:
     image: mongo
     restart: unless-stopped
@@ -18,7 +18,7 @@ services:
     networks:
       - example
 
-#  //****** Database interface ******//
+#  //****** DATABASE INTERFACE ******//
   mongo-express:
     image: mongo-express
     ports:
@@ -39,7 +39,7 @@ services:
     networks:
       - example
 
-#  //****** Proxy, loadbalancing, static files ******//
+#  //****** PROXY, LOADBALANCING, STATIC FILES ******//
   nginx:
     build:
       context: ./nginx/
@@ -55,8 +55,10 @@ services:
     depends_on:
       - app
       - mongo
+      - rq-server
+      - rq-dashboard
 
-#  //****** Backend app ******//
+#  //****** BACKEND APP ******//
   app:
     build:
       context: ./backend/
@@ -73,7 +75,7 @@ services:
     depends_on:
       - mongo
 
-#  //****** Stack ELK ******//
+#  //****** ELK STACK ******//
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:7.15.0
     env_file: .env
@@ -81,6 +83,8 @@ services:
       - discovery.type=single-node
       - ELASTIC_PASSWORD=${ELASTICSEARCH_PASSWORD}
       - "xpack.security.enabled=true"
+    ports:
+    - 9200:9200
     volumes:
       - es_data:/usr/share/elasticsearch/data
     networks:
@@ -96,7 +100,7 @@ services:
       - logs:/var/log/apache2/html
       - logstash_sincedb:/usr/share/logstash/sincedb:rw
     ports:
-      - 9200:9200
+      - 5044:5044
     depends_on:
       - elasticsearch
     environment:
@@ -121,6 +125,24 @@ services:
       - elasticsearch
     networks:
       - example
+
+#  //****** REDIS SERVER ******//
+  rq-dashboard:
+    image: jaredv/rq-docker:0.0.2 
+    command: rq-dashboard -H rq-server
+    ports:
+      - 9181:9181
+
+  rq-worker:
+    image: jaredv/rq-docker:0.0.2
+    command: rq worker -u redis://rq-server:6379 high normal low
+    deploy:
+      replicas: 3
+
+  rq-server:
+    image: redis:alpine
+    ports:
+      - 6379:6379
 
 networks:
   example:
