@@ -1,0 +1,6 @@
+# compiled output
+/mongo
+/rq-docker
+
+package*.json
+.env
