@@ -1,6 +1,6 @@
 # NestJS Boilerplate
 
-This project is a boilerplate to start using NestJS in a prod environment.
+This project is a boilerplate to start using NestJS in a prod environment, on a single machine (no kubernetes or docker swarm is used here).
 
 It will setup a NestJS backend with a connection to the database (mongo).
 A proxy is already set with nginx and has a loadbalancing plus it load static files.
