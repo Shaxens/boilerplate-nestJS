@@ -62,28 +62,6 @@ services:
       - REDIS_HOST=${REDIS_HOST}
       - REDIS_PORT=${REDIS_PORT}
       - REDIS_PASSWORD=${REDIS_PASSWORD}
-      - PORT=3000
-    ports:
-      - 3000:3000
-    networks:
-      - example
-    volumes:
-      - ./backend/src:/app/src
-    depends_on:
-      - mongo
-
-  app-2:
-    build:
-      context: ./backend/
-      dockerfile: Docker/Dockerfile
-    env_file: .env
-    environment:
-      - REDIS_HOST=${REDIS_HOST}
-      - REDIS_PORT=${REDIS_PORT}
-      - REDIS_PASSWORD=${REDIS_PASSWORD}
-      - PORT=3001
-    ports:
-      - 3001:3001
     networks:
       - example
     volumes:
