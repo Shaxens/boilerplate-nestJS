@@ -2,6 +2,7 @@ version: '3.5'
 
 services:
 
+#  //****** Database ******//
   mongo:
     image: mongo
     restart: unless-stopped
@@ -17,6 +18,7 @@ services:
     networks:
       - example
 
+#  //****** Database interface ******//
   mongo-express:
     image: mongo-express
     ports:
@@ -37,6 +39,7 @@ services:
     networks:
       - example
 
+#  //****** Proxy, loadbalancing, static files ******//
   nginx:
     build:
       context: ./nginx/
@@ -53,6 +56,7 @@ services:
       - app
       - mongo
 
+#  //****** Backend app ******//
   app:
     build:
       context: ./backend/
@@ -69,11 +73,64 @@ services:
     depends_on:
       - mongo
 
+#  //****** Stack ELK ******//
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.15.0
+    env_file: .env
+    environment:
+      - discovery.type=single-node
+      - ELASTIC_PASSWORD=${ELASTICSEARCH_PASSWORD}
+      - "xpack.security.enabled=true"
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+    networks:
+      - example
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:7.15.0
+    env_file: .env
+    user: root
+    volumes:
+      - ./logstash.conf:/usr/share/logstash/pipeline/logstash.conf
+      - ./logstash.yml:/usr/share/logstash/config/logstash.yml
+      - logs:/var/log/apache2/html
+      - logstash_sincedb:/usr/share/logstash/sincedb:rw
+    ports:
+      - 9200:9200
+    depends_on:
+      - elasticsearch
+    environment:
+      - ELASTICSEARCH_USERNAME=${ELASTICSEARCH_USERNAME}
+      - ELASTICSEARCH_PASSWORD=${ELASTICSEARCH_PASSWORD}
+    networks:
+      - example
+
+  kibana:
+    hostname: kibana
+    image: docker.elastic.co/kibana/kibana:7.15.0
+    env_file: .env
+    environment:
+      - SERVER_BASEPATH=/kibana
+      - SERVER_REWRITEBASEPATH=true
+      - ELASTICSEARCH_USERNAME=${ELASTICSEARCH_USERNAME}
+      - ELASTICSEARCH_PASSWORD=${ELASTICSEARCH_PASSWORD}
+      - xpack.encryptedSavedObjects.encryptionKey=${ELASTICSEARCH_ENCRYPTION_KEY}
+    ports:
+    - 5601:5601
+    depends_on:
+      - elasticsearch
+    networks:
+      - example
+
 networks:
   example:
-  
+    
 volumes:
   mongo:
     driver: local
   rq-server:
     driver: local
+  es_data:
+  logstash_sincedb:
+  logs:
+    name: logs
